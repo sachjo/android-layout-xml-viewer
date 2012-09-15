@@ -224,9 +224,9 @@ public class MainActivity extends Activity implements OnClickListener,
 						ff = new File[1];
 					}
 					ff[0] = currentPath.getParentFile();
-					Arrays.sort(ff);
 				}
 				if(ff != null) {
+					Arrays.sort(ff);
 					System.out.println("list is null");
 					ArrayAdapter<File> adapter_filelist = new ArrayAdapter<File>(this,
 							R.layout.list, ff);
