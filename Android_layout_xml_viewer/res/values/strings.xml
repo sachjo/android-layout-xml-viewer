@@ -1,0 +1,12 @@
+<resources>
+
+    <string name="app_name">Android_layout_xml_viewer</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">Android Layout XML Viewer</string>
+    <string name="Btn1Label">1</string>
+    <string name="DefaultText">test</string>
+    <string name="Btn2Label">2</string>
+    <string name="Btn3Label">3</string>
+
+</resources>
