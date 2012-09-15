@@ -8,5 +8,9 @@
     <string name="DefaultText">test</string>
     <string name="Btn2Label">2</string>
     <string name="Btn3Label">3</string>
+    <string name="menu_initialize">Initialize</string>
+    <string name="menu_editor">editor</string>
+    <string name="menu_viewer">viewer</string>
+    <string name="menu_filer">file list</string>
 
 </resources>

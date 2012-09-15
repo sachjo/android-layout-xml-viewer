@@ -1,11 +1,16 @@
 package sachjo.develop.tool.android_layout_xml_viewer;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -16,6 +21,7 @@ import org.xmlpull.v1.XmlPullParserFactory;
 import android.os.Bundle;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
 import android.widget.AdapterView;
@@ -28,89 +34,121 @@ import android.util.Log;
 import android.util.Xml;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 
 public class MainActivity extends Activity implements OnClickListener,
 		OnItemClickListener {
-	String[] layoutNameArray;
-	Integer[] layoutIdArray;
+	static final int MODE_EDITOR = 0;
+	static final int MODE_VIEWER = 1;
+	static final int MODE_FILER = 2;
+	static final String ANDROID_XML_VIEWER = "AndroidXMLViewer";
+
+	private SharedPreferences mPrefs;
+	private int mMode;
+	private String mXmlText;
+	private String mCurrentPath;
+	
+	private String[] layoutNameArray;
+	private Integer[] layoutIdArray;
+
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		boolean ret = true;
+		switch (item.getItemId()) {
+		default:
+			ret = super.onOptionsItemSelected(item);
+			break;
+		case R.id.menu_initialize:
+			mMode = MODE_EDITOR;
+			mXmlText = "";
+			setView();
+			ret = true;
+			break;
+		case R.id.menu_editor:
+			mMode = MODE_EDITOR;
+			setView();
+			ret = true;
+			break;
+		case R.id.menu_viewer:
+			if(mMode == MODE_EDITOR){
+				EditText editText = (EditText) findViewById(R.id.editText1);
+				mXmlText = editText.getText().toString();
+			}
+			mMode = MODE_VIEWER;
+			setView();
+			break;
+		case R.id.menu_filer:
+			mMode = MODE_FILER;
+			setView();
+			break;
+		}
+		return ret;
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		if(mMode == MODE_EDITOR) {
+			EditText editText = (EditText) findViewById(R.id.editText1);
+			mXmlText = editText.getText().toString();
+			outState.putString("XMLText", mXmlText);
+		}
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		mXmlText = savedInstanceState.getString("XMLText");
+		if(mMode == MODE_EDITOR) {
+			EditText editText = (EditText) findViewById(R.id.editText1);
+			editText.setText(mXmlText);
+		}
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		
+		SharedPreferences.Editor ed = mPrefs.edit();
+		ed.putString("XMLText", mXmlText);
+		ed.putInt("AppMode", mMode);
+		ed.putString("CurrentPath", mCurrentPath);
+		ed.commit();
+	}
+
+	@Override
+	protected void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
+	}
 
 	@Override
 	public void onClick(View v) {
-		// TODO Auto-generated method stub
 		switch (v.getId()) {
-		case R.id.button1:
-			EditText editText = (EditText) findViewById(R.id.editText1);
-			String xmlText = editText.getText().toString();
-
-			if (xmlText.isEmpty()) {
-				// ダイアログの表示
-				AlertDialog.Builder dlg;
-				dlg = new AlertDialog.Builder(this);
-				dlg.setTitle("String Empty");
-				dlg.setMessage("Select from list or input text.");
-				dlg.show();
-			} else {
-				InputStream bais = null;
-				try {
-					bais = new ByteArrayInputStream(xmlText.getBytes("utf-8"));
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				XmlPullParserFactory factory;
-				try {
-					factory = XmlPullParserFactory.newInstance();
-					factory.setNamespaceAware(true);
-					// XmlPullParser parser = factory.newPullParser();
-					// xpp.setInput( new StringReader (concat) );
-
-					XmlPullParser parser = Xml.newPullParser();
-					try {
-						parser.setInput(bais, "utf-8");
-					} catch (XmlPullParserException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					try {
-						DisplayMetrics metrics = new DisplayMetrics();
-						getWindowManager().getDefaultDisplay().getMetrics(metrics);
-						LayoutInflater orgLayInf = this.getLayoutInflater();
-						LayoutInflater2 layInf = new LayoutInflater2(orgLayInf,this,metrics);
-						View view = layInf.inflate(parser, null);
-						setContentView(view);
-//						setContentView(this.getLayoutInflater().inflate(parser, null));
-					} catch (Exception e) {
-						// TODO 自動生成された catch ブロック
-						e.printStackTrace();
-						// ダイアログの表示
-						AlertDialog.Builder dlg;
-						dlg = new AlertDialog.Builder(this);
-						dlg.setTitle("inflate error");
-						dlg.setMessage(e.getMessage());
-						dlg.show();
-					}
-				} catch (XmlPullParserException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-			}
-			break;
-		case R.id.button2:
-			Resources res = getResources();
-			XmlResourceParser resParser = res.getLayout(layoutIdArray[0]);
-			setContentView(this.getLayoutInflater().inflate(resParser, null));
-			Button mGoBtn = (Button) findViewById(R.id.button1);
-			mGoBtn.setOnClickListener(this);
-			Button mGoBtn2 = (Button) findViewById(R.id.button2);
-			mGoBtn2.setOnClickListener(this);
-			Button mGoBtn3 = (Button) findViewById(R.id.button3);
-			mGoBtn3.setOnClickListener(this);
-			break;
-		case R.id.button3:
-			onCreate(null);
+//		case R.id.button1:
+//			EditText editText = (EditText) findViewById(R.id.editText1);
+//			mXmlText = editText.getText().toString();
+//			mMode = MODE_VIEWER;
+//			setView(null);
+//			break;
+//		case R.id.button2:
+//			Resources res = getResources();
+//			XmlResourceParser resParser = res.getLayout(layoutIdArray[0]);
+//			setContentView(this.getLayoutInflater().inflate(resParser, null));
+//			Button mGoBtn = (Button) findViewById(R.id.button1);
+//			mGoBtn.setOnClickListener(this);
+//			Button mGoBtn2 = (Button) findViewById(R.id.button2);
+//			mGoBtn2.setOnClickListener(this);
+//			Button mGoBtn3 = (Button) findViewById(R.id.button3);
+//			mGoBtn3.setOnClickListener(this);
+//			break;
+//		case R.id.button3:
+//			mMode = MODE_EDITOR;
+//			setView(null);
+//			break;
+		default:
 			break;
 		}
 	}
@@ -118,42 +156,178 @@ public class MainActivity extends Activity implements OnClickListener,
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		// setContentView(R.layout.activity_main);
-		setContentView(R.layout.activity_list);
-
-		Button mGoBtn = (Button) findViewById(R.id.button1);
-		mGoBtn.setOnClickListener(this);
-		Button mGoBtn2 = (Button) findViewById(R.id.button2);
-		mGoBtn2.setOnClickListener(this);
-		Button mGoBtn3 = (Button) findViewById(R.id.button3);
-		mGoBtn3.setOnClickListener(this);
-		// String[] layoutList = new String[];
-		java.lang.reflect.Field[] fields = R.layout.class.getFields();
-		List<String> layoutNameList = new ArrayList<String>();
-		List<Integer> layoutIdList = new ArrayList<Integer>();
-		R.layout layoutInstance = new R.layout();
-		for (Field field : fields) {
-			layoutNameList.add(field.getName());
-			try {
-				layoutIdList.add(field.getInt(layoutInstance));
-			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		mPrefs = getSharedPreferences(ANDROID_XML_VIEWER, MODE_PRIVATE);
+		mMode = mPrefs.getInt("AppMode", MODE_EDITOR);
+		mXmlText = mPrefs.getString("XMLText", "");
+		mCurrentPath = mPrefs.getString("CurrentPath","/");
+		
+		if (mXmlText.isEmpty() && mMode == MODE_VIEWER) {
+			mMode = MODE_EDITOR;
 		}
-		layoutNameArray = layoutNameList.toArray(new String[0]);
-		layoutIdArray = layoutIdList.toArray(new Integer[0]);
-		// String[] layoutNameArray = {"test1","test2"};
-		ListView listView = (ListView) findViewById(R.id.listView1);
-		ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-				R.layout.list, layoutNameArray);
-		// Log.d("test",layoutNameArray[0]);
-		listView.setAdapter(adapter);
-		// リストビューのアイテムがクリックされた時に呼び出されるコールバックリスナーを登録します
-		listView.setOnItemClickListener(this);
+		if(savedInstanceState != null) {
+			mXmlText = savedInstanceState.getString("XMLText");
+		}
+		setView();
+	}
+	
+	private void setView() {
+		switch(mMode) {
+		case MODE_EDITOR:
+			setContentView(R.layout.activity_list);
+			EditText editText = (EditText) findViewById(R.id.editText1);
+	
+//			Button mGoBtn = (Button) findViewById(R.id.button1);
+//			mGoBtn.setOnClickListener(this);
+//			Button mGoBtn2 = (Button) findViewById(R.id.button2);
+//			mGoBtn2.setOnClickListener(this);
+//			Button mGoBtn3 = (Button) findViewById(R.id.button3);
+//			mGoBtn3.setOnClickListener(this);
+			java.lang.reflect.Field[] fields = R.layout.class.getFields();
+			List<String> layoutNameList = new ArrayList<String>();
+			List<Integer> layoutIdList = new ArrayList<Integer>();
+			R.layout layoutInstance = new R.layout();
+			for (Field field : fields) {
+				layoutNameList.add(field.getName());
+				try {
+					layoutIdList.add(field.getInt(layoutInstance));
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					e.printStackTrace();
+				}
+			}
+			layoutNameArray = layoutNameList.toArray(new String[0]);
+			layoutIdArray = layoutIdList.toArray(new Integer[0]);
+			ListView listView = (ListView) findViewById(R.id.listView1);
+			ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+					R.layout.list, layoutNameArray);
+			listView.setAdapter(adapter);
+			// リストビューのアイテムがクリックされた時に呼び出されるコールバックリスナーを登録します
+			listView.setOnItemClickListener(this);
+			editText.setText(mXmlText);
+			break;
+		case MODE_FILER:
+			File currentPath = new File(mCurrentPath);
+			//System.out.println("selected is " + currentPath.getPath() + "," + currentPath.getName());
+			if(currentPath.isDirectory()){
+				File[] ffTemp = currentPath.listFiles();
+				File[] ff;
+				if(currentPath.getPath().equals("/")){
+					ff = ffTemp;
+				}
+				else {
+					if(ffTemp != null){
+						ff = new File[ffTemp.length+1];
+						System.arraycopy(ffTemp, 0, ff, 1, ffTemp.length);
+					}
+					else {
+						ff = new File[1];
+					}
+					ff[0] = currentPath.getParentFile();
+					Arrays.sort(ff);
+				}
+				if(ff != null) {
+					System.out.println("list is null");
+					ArrayAdapter<File> adapter_filelist = new ArrayAdapter<File>(this,
+							R.layout.list, ff);
+					setContentView(R.layout.activity_filer);
+					ListView listView_file = (ListView) findViewById(R.id.listView_file);
+					listView_file.setAdapter(adapter_filelist);
+
+					// リストビューのアイテムがクリックされた時に呼び出されるコールバックリスナーを登録します
+					listView_file.setOnItemClickListener(this);
+				}
+			}
+			else {
+				System.out.println("not directory");
+				mCurrentPath = currentPath.getParent();
+				if(!currentPath.getParentFile().getName().equals("layout")) {
+					// ダイアログの表示
+					AlertDialog.Builder dlg;
+					dlg = new AlertDialog.Builder(this);
+					dlg.setTitle("Not opened.");
+					dlg.setMessage("Select XML file in layout folder.");
+					dlg.show();
+				}
+				else if(!currentPath.getName().endsWith("xml")) {
+					AlertDialog.Builder dlg;
+					dlg = new AlertDialog.Builder(this);
+					dlg.setTitle("Can'T opened.");
+					dlg.setMessage("Select XML file.");
+					dlg.show();
+				}
+				else {
+					FileInputStream fileInputStream;
+	                try {
+						fileInputStream = new FileInputStream(currentPath.getPath());
+		                byte[] readBytes = new byte[fileInputStream.available()];
+		                fileInputStream.read(readBytes);
+		                mXmlText = new String(readBytes);
+		                mMode = MODE_EDITOR;
+		                setView();
+					} catch (FileNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+			break;
+		case MODE_VIEWER:
+			if (mXmlText.isEmpty()) {
+				// ダイアログの表示
+				AlertDialog.Builder dlg;
+				dlg = new AlertDialog.Builder(this);
+				dlg.setTitle("String Empty");
+				dlg.setMessage("Select from list or input text.");
+				dlg.show();
+				mMode = MODE_EDITOR;
+			} else {
+				InputStream bais = null;
+				try {
+					bais = new ByteArrayInputStream(mXmlText.getBytes("utf-8"));
+				} catch (UnsupportedEncodingException e) {
+					e.printStackTrace();
+				}
+				XmlPullParserFactory factory;
+				try {
+					factory = XmlPullParserFactory.newInstance();
+					factory.setNamespaceAware(true);
+
+					XmlPullParser parser = Xml.newPullParser();
+					try {
+						parser.setInput(bais, "utf-8");
+					} catch (XmlPullParserException e) {
+						e.printStackTrace();
+					}
+					try {
+						DisplayMetrics metrics = new DisplayMetrics();
+						getWindowManager().getDefaultDisplay().getMetrics(
+								metrics);
+						LayoutInflater orgLayInf = this.getLayoutInflater();
+						LayoutInflater2 layInf = new LayoutInflater2(orgLayInf,
+								this, metrics);
+						View view = layInf.inflate(parser, null);
+						setContentView(view);
+					} catch (Exception e) {
+						e.printStackTrace();
+						// ダイアログの表示
+						AlertDialog.Builder dlg;
+						dlg = new AlertDialog.Builder(this);
+						dlg.setTitle("inflate error");
+						dlg.setMessage(e.getMessage());
+						dlg.show();
+						mMode = MODE_EDITOR;
+						setView();
+					}
+				} catch (XmlPullParserException e1) {
+					e1.printStackTrace();
+				}
+			}
+			break;
+		}
 	}
 
 	@Override
@@ -163,46 +337,29 @@ public class MainActivity extends Activity implements OnClickListener,
 	}
 
 	@Override
-	public void onItemClick(AdapterView<?> arg0, View arg1, int position,
-			long arg3) {
-		// TODO Auto-generated method stub
+	public void onItemClick(AdapterView<?> parent, View view, int position,
+			long id) {
 		Log.d("test", "clicked at " + position);
-		Resources res = getResources();
-
-		// EditText editText = (EditText) findViewById(R.id.editText1);
-
-		// TypedValue outData = new TypedValue();
-		// res.getValue(layoutIdArray[position],outData,true);
-		// editText.setText(outData.toString());
-
-		// editText.setText(res.getText(layoutIdArray[position]));
-
-		// InputStream in = res.openRawResource(layoutIdArray[position]);
-		// BufferedReader reader;
-		// try {
-		// reader = new BufferedReader(new InputStreamReader(in,
-		// "UTF-8"/* 文字コード指定 */));
-		// StringBuffer buf = new StringBuffer();
-		// String str = null;
-		// while ((str = reader.readLine()) != null) {
-		// buf.append(str);
-		// }
-		// editText.setText(str);
-		// } catch (UnsupportedEncodingException e) {
-		// // TODO 自動生成された catch ブロック
-		// e.printStackTrace();
-		// } catch (IOException e) {
-		// // TODO 自動生成された catch ブロック
-		// e.printStackTrace();
-		// }
-		// try {
-		// in.close();
-		// } catch (IOException e) {
-		// // TODO 自動生成された catch ブロック
-		// e.printStackTrace();
-		// }
-
-		XmlResourceParser resParser = res.getLayout(layoutIdArray[position]);
+		switch(parent.getId()) {
+		case R.id.listView1:
+			Resources res = getResources();
+			XmlResourceParser resParser = res.getLayout(layoutIdArray[position]);
+			String parsedStr = parseResXmlToStr(resParser);
+			EditText editText = (EditText) findViewById(R.id.editText1);
+			if(parsedStr != null) {
+				mXmlText = parsedStr;
+				editText.setText(parsedStr);
+			}
+			break;
+		case R.id.listView_file:
+			File currentPath =(File)parent.getItemAtPosition(position);
+			mCurrentPath = currentPath.getPath();
+			setView();
+			break;
+		}
+	}
+	
+	private String parseResXmlToStr(XmlResourceParser resParser) {
 		int eventType;
 		String TAG = "resParseTest";
 		String outStr = "";
@@ -249,24 +406,9 @@ public class MainActivity extends Activity implements OnClickListener,
 									+ "\"\n";
 						}
 					}
-					// for (int i =
-					// resParser.getNamespaceCount(resParser.getDepth()) -1; i
-					// >= 0; i--) {
-					// map.put(resParser.getNamespaceUri(i),
-					// resParser.getNamespacePrefix(i));
-					// }
 					int num = resParser.getAttributeCount();
 					String msg = "";
 					for (int j = 0; j < num; j++) {
-						// if(map.containsKey(resParser.getAttributeNamespace(j)))
-						// {
-						// msg = "\"" +
-						// map.get(resParser.getAttributeNamespace(j));
-						// } else {
-						// msg = "\"" + resParser.getAttributeNamespace(j);
-						//
-						// }
-						// msg += "\":"
 						msg += "" + resParser.getAttributeName(j) + ","
 								+ resParser.getAttributeType(j) + ","
 								+ resParser.getAttributeValue(j) + "\n";
@@ -278,8 +420,6 @@ public class MainActivity extends Activity implements OnClickListener,
 						} else {
 							outStr += " " + resParser.getAttributeNamespace(j);
 						}
-						// outStr += " {" + resParser.getAttributeNamespace(j) +
-						// "}";
 						outStr += ":" + resParser.getAttributeName(j) + "=\""
 								+ resParser.getAttributeValue(j) + "\"\n";
 						for (int i = 0; i < nestNum; i++) {
@@ -296,10 +436,9 @@ public class MainActivity extends Activity implements OnClickListener,
 						outStr += "/>\n";
 						isInTag = false;
 					} else {
-						//outStr += "</" + resParser.getName() + ">\n";
-
 						String name = resParser.getName();
-						if (name.equals("RelativeLayout") || name.equals("Button")
+						if (name.equals("RelativeLayout")
+								|| name.equals("Button")
 								|| name.equals("ListView")
 								|| name.equals("EditText")) {
 							name = "android.widget." + name;
@@ -311,13 +450,11 @@ public class MainActivity extends Activity implements OnClickListener,
 				}
 				eventType = resParser.next();
 			}
-			EditText editText = (EditText) findViewById(R.id.editText1);
-			editText.setText(outStr);
 		} catch (XmlPullParserException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return outStr;
 	}
 }

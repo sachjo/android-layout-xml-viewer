@@ -25,6 +25,7 @@ import android.content.res.XmlResourceParser;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Xml;
+import android.view.Gravity;
 import android.view.InflateException;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -218,96 +219,94 @@ public  class LayoutInflater2 extends LayoutInflater {
      *         the inflated XML file.
      */
     public View inflate(XmlPullParser parser, ViewGroup root, boolean attachToRoot) {
-        //synchronized (mConstructorArgs) {
-            final AttributeSet attrs = Xml.asAttributeSet(parser);
-            if (DEBUG) if(mContext == null) System.out.println("mContext is null");
-            View result = root;
+        final AttributeSet attrs = Xml.asAttributeSet(parser);
+        if (DEBUG) if(mContext == null) System.out.println("mContext is null");
+        View result = root;
 
-            try {
-                // Look for the root node.
-                int type;
-                while ((type = parser.next()) != XmlPullParser.START_TAG &&
-                        type != XmlPullParser.END_DOCUMENT) {
-                    // Empty
-                }
-
-                if (type != XmlPullParser.START_TAG) {
-                    throw new InflateException(parser.getPositionDescription()
-                            + ": No start tag found!");
-                }
-
-                final String name = parser.getName();
-
-                if (DEBUG) {
-                    System.out.println("**************************");
-                    System.out.println("Creating root view: "
-                            + name);
-                    System.out.println("**************************");
-                }
-
-                if (TAG_MERGE.equals(name)) {
-                    if (root == null || !attachToRoot) {
-                        throw new InflateException("<merge /> can be used only with a valid "
-                                + "ViewGroup root and attachToRoot=true");
-                    }
-
-                    rInflate(parser, root, attrs);
-                } else {
-                    // Temp is the root view that was found in the xml
-                    View temp = createViewFromTag(name, attrs);
-
-                    ViewGroup.LayoutParams params = null;
-
-                    if (root != null) {
-                        if (DEBUG) {
-                            System.out.println("Creating params from root: " +
-                                    root);
-                        }
-                        // Create layout params that match root, if supplied
-                        params = root.generateLayoutParams(attrs);
-                        if (!attachToRoot) {
-                            // Set the layout params for temp if we are not
-                            // attaching. (If we are, we use addView, below)
-                            temp.setLayoutParams(params);
-                        }
-                    }
-
-                    if (DEBUG) {
-                        System.out.println("-----> start inflating children");
-                    }
-                    // Inflate all children under temp
-                    rInflate(parser, temp, attrs);
-                    if (DEBUG) {
-                        System.out.println("-----> done inflating children");
-                    }
-
-                    // We are supposed to attach all the views we found (int temp)
-                    // to root. Do that now.
-                    if (root != null && attachToRoot) {
-                        root.addView(temp, params);
-                    }
-
-                    // Decide whether to return the root that was passed in or the
-                    // top view found in xml.
-                    if (root == null || !attachToRoot) {
-                        result = temp;
-                    }
-                }
-
-            } catch (XmlPullParserException e) {
-                InflateException ex = new InflateException(e.getMessage());
-                ex.initCause(e);
-                throw ex;
-            } catch (IOException e) {
-                InflateException ex = new InflateException(
-                        parser.getPositionDescription()
-                        + ": " + e.getMessage());
-                ex.initCause(e);
-                throw ex;
+        try {
+            // Look for the root node.
+            int type;
+            while ((type = parser.next()) != XmlPullParser.START_TAG &&
+                    type != XmlPullParser.END_DOCUMENT) {
+                // Empty
             }
 
-            return result;
-        //}
+            if (type != XmlPullParser.START_TAG) {
+                throw new InflateException(parser.getPositionDescription()
+                        + ": No start tag found!");
+            }
+
+            final String name = parser.getName();
+
+            if (DEBUG) {
+                System.out.println("**************************");
+                System.out.println("Creating root view: "
+                        + name);
+                System.out.println("**************************");
+            }
+
+            if (TAG_MERGE.equals(name)) {
+                if (root == null || !attachToRoot) {
+                    throw new InflateException("<merge /> can be used only with a valid "
+                            + "ViewGroup root and attachToRoot=true");
+                }
+
+                rInflate(parser, root, attrs);
+            } else {
+                // Temp is the root view that was found in the xml
+                View temp = createViewFromTag(name, attrs);
+
+                ViewGroup.LayoutParams params = null;
+
+                if (root != null) {
+                    if (DEBUG) {
+                        System.out.println("Creating params from root: " +
+                                root);
+                    }
+                    // Create layout params that match root, if supplied
+                    params = root.generateLayoutParams(attrs);
+                    if (!attachToRoot) {
+                        // Set the layout params for temp if we are not
+                        // attaching. (If we are, we use addView, below)
+                        temp.setLayoutParams(params);
+                    }
+                }
+
+                if (DEBUG) {
+                    System.out.println("-----> start inflating children");
+                }
+                // Inflate all children under temp
+                rInflate(parser, temp, attrs);
+                if (DEBUG) {
+                    System.out.println("-----> done inflating children");
+                }
+
+                // We are supposed to attach all the views we found (int temp)
+                // to root. Do that now.
+                if (root != null && attachToRoot) {
+                    root.addView(temp, params);
+                }
+
+                // Decide whether to return the root that was passed in or the
+                // top view found in xml.
+                if (root == null || !attachToRoot) {
+                    result = temp;
+                }
+            }
+
+        } catch (XmlPullParserException e) {
+            InflateException ex = new InflateException(e.getMessage());
+            ex.initCause(e);
+            throw ex;
+        } catch (IOException e) {
+            InflateException ex = new InflateException(
+                    parser.getPositionDescription()
+                    + ": " + e.getMessage());
+            ex.initCause(e);
+            throw ex;
+        }
+
+        return result;
     }
 
     /**
@@ -363,6 +362,12 @@ public  class LayoutInflater2 extends LayoutInflater {
             	String emsStr = attrs.getAttributeValue(null,"ems");
             	if(emsStr != null) {
             		editText.setEms(Integer.parseInt(emsStr));
+            	}
+            	String gravityStr = attrs.getAttributeValue(null,"gravity");
+            	if(gravityStr != null) {
+            		if(gravityStr.indexOf("top") != -1){
+            			editText.setGravity(Gravity.TOP);
+            		}
             	}
         		retView = (View) editText;
         	}
@@ -501,7 +506,7 @@ public  class LayoutInflater2 extends LayoutInflater {
                 int height = 0;
                 if(widthStr != null){
 	                if(widthStr.matches(".+dip")) {
-	                	width = (int)(Double.parseDouble(widthStr.replace("dip", "")) / mMetrics.scaledDensity);
+	                	width = (int)(Double.parseDouble(widthStr.replace("dip", "")) * mMetrics.scaledDensity);
 	                }
 	                else {
 	                	width = Integer.parseInt(widthStr);

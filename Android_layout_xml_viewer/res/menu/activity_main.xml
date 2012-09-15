@@ -3,4 +3,8 @@
         android:title="@string/menu_settings"
         android:orderInCategory="100"
         android:showAsAction="never" />
+    <item android:id="@+id/menu_initialize" android:orderInCategory="101" android:title="@string/menu_initialize" android:showAsAction="never"></item>
+    <item android:id="@+id/menu_editor" android:orderInCategory="102" android:title="@string/menu_editor"></item>
+    <item android:id="@+id/menu_viewer" android:orderInCategory="103" android:title="@string/menu_viewer"></item>
+    <item android:id="@+id/menu_filer" android:orderInCategory="104" android:title="@string/menu_filer"></item>
 </menu>
